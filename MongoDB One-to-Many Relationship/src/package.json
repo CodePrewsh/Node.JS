@@ -1,0 +1,15 @@
+{
+  "name": "src",
+  "version": "1.0.0",
+  "description": "Mongoose One-to-Many Relationship",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "Precious",
+  "license": "ISC",
+  "dependencies": {
+    "mongoose": "^8.3.2"
+  }
+}
