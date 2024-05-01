@@ -38,6 +38,7 @@ app.use(session({
 // Flash middleware
 app.use(flash());
 
+// Global middleware to check user session
 global.loggedIn = null;
 app.use("*", (req, res, next) => {
     loggedIn = req.session.userId;
@@ -78,20 +79,30 @@ app.get('/post/:id', async (req, res) => {
     });
 });
 
-app.get('/posts/new', newPostController);
-
-app.get('/create', (req, res) => {
-    res.render('create');
+// Route to render the form for creating a new post
+app.get('/posts/new', authMiddleware, (req, res) => {
+    res.render('newpost');
 });
 
-app.post('/posts/store', async (req, res) => {
+// Route to handle the creation of a new post
+app.post('/posts/store', authMiddleware, async (req, res) => {
     try {
-        let image = req.files.image;
+        if (!req.files || !req.files.image) {
+            return res.status(400).send('No image was uploaded.');
+        }
+
+        const image = req.files.image;
+
+        // Move the image to the 'public/img' directory
         await image.mv(path.resolve(__dirname, 'public/img', image.name));
+
+        // Create a new BlogPost with the image path
         await BlogPost.create({
             ...req.body,
             image: '/img/' + image.name
         });
+
+        // Redirect to the home page after successful post creation
         res.redirect('/');
     } catch (error) {
         console.error(error);
@@ -99,30 +110,10 @@ app.post('/posts/store', async (req, res) => {
     }
 });
 
-app.get('/auth/register', newUserController);
-app.post('/users/register', storeUserController);
-
-app.get('/auth/login', loginController);
-app.post('/users/login', loginUserController);
-
-app.get('/auth/logout', logoutController);
-
-app.get('/posts/new', authMiddleware, newPostController);
-
-app.post('/posts/store', authMiddleware, storePostController);
-
 app.get('/auth/register', redirectIfAuthenticatedMiddleware, newUserController);
 app.post('/users/register', redirectIfAuthenticatedMiddleware, storeUserController);
 app.get('/auth/login', redirectIfAuthenticatedMiddleware, loginController);
 app.post('/users/login', redirectIfAuthenticatedMiddleware, loginUserController);
-
-// The below routes seem to be duplicated, so you can remove them.
-// app.get('/posts/new', authMiddleware, newPostController);
-// app.post('/posts/store', authMiddleware, storePostController);
-// app.get('/auth/register', redirectIfAuthenticatedMiddleware, newUserController);
-// app.post('/users/register', redirectIfAuthenticatedMiddleware, storeUserController);
-// app.get('/auth/login', redirectIfAuthenticatedMiddleware, loginController);
-// app.post('/users/login', redirectIfAuthenticatedMiddleware, loginUserController);
-
 app.get('/auth/logout', logoutController);
+
 app.use((req, res) => res.render('notfound'));
